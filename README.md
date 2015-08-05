@@ -5,3 +5,4 @@ npm install
 ```
 ## ToDO
 - Fix error EADDRINUSE while ```gulp run```
+- Publish fonts
