@@ -3,6 +3,8 @@
 var gulp = require('gulp');
 var del = require('del');
 var join = require('path').join;
+var browserify = require('browserify');
+var source = require('vinyl-source-stream');
 var pngquant = require('imagemin-pngquant');
 var runSequence = require('run-sequence');
 
@@ -15,7 +17,7 @@ var projectMap = {
         tests: '/tests',
         tmp: '/.tmp',
         public: '/public',
-        bower: '/public/vendor',
+        bower: '/bower_components',
         fonts: '/resources/fonts',
         images: '/resources/images',
         js: '/resources/javascripts',
@@ -58,28 +60,17 @@ gulp.task('js:compress', function () {
 });
 
 // ################################################################################
-// ##                         JavaScript concatenation.                          ##
+// ##                             JavaScript compile.                            ##
 // ################################################################################
-gulp.task('js:concat', function () {
+gulp.task('js:compile', function () {
     var path = getPath({type: 'folder', name: 'js'});
     var fileName = getPath({type: 'file', name: 'main_js'});
-    var filesOrder = [
-        // ...
-        'main.js'
-        // ...
-    ].map(function(key) {
-            return join(path, key);
-        });
 
-    return gulp.src(filesOrder)
-        .pipe(plugins.concat({
-            path: fileName,
-            stat: {
-                mode: '0666'
-            }
-        }))
-        .pipe(gulp.dest(join(publicPath, 'js')))
-        .pipe(plugins.size({title: 'Total uncompressed main.js file size:'}));
+    return browserify(join(path, 'main.js'))
+        .bundle()
+        .pipe(source(fileName))
+        .pipe(gulp.dest(join(publicPath, 'js')));
+        //.pipe(plugins.size({title: 'Total uncompressed main.js file size:'}));
 });
 
 // ################################################################################
@@ -104,7 +95,6 @@ gulp.task('js:relocate_vendor', function () {
 // ################################################################################
 gulp.task('css:compile', function () {
     var path = getPath({'type': 'folder', 'name': 'scss'});
-    var bowerPath = getPath({type: 'folder', name: 'bower'});
 
     // For best performance, don't add Sass partials to `gulp.src`.
     return gulp.src([
@@ -114,11 +104,7 @@ gulp.task('css:compile', function () {
         .pipe(plugins.changed('styles', {extension: '.scss'}))
         .pipe(plugins.sass({
             outputStyle: 'expanded',
-            precision: 10,
-            includePaths: [
-                bowerPath + '/bootstrap-sass/assets/stylesheets',
-                bowerPath + '/font-awesome/scss'
-            ]
+            precision: 10
         }))
         .on('error', console.error.bind(console))
         .pipe(gulp.dest(join(publicPath, 'css')))
@@ -182,8 +168,8 @@ gulp.task('clean', del.bind(null, [
 gulp.task('build', ['clean', 'bower:install'], function (callback) {
     runSequence(
         [
-            'js:concat',
-            'js:relocate_vendor'
+            'js:compile'
+            //'js:relocate_vendor'
         ],
         [
             'css:compile'
@@ -197,7 +183,7 @@ gulp.task('build', ['clean', 'bower:install'], function (callback) {
 
 gulp.task('backend:run', ['build'], function () {
     // Start the server
-    var server = plugins.liveServer('server.js');
+    var server = plugins.liveServer('app.js');
     server.start();
 });
 

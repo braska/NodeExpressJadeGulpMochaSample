@@ -1,4 +1,9 @@
-(function (window) {
-    'use strict';
+var jQuery = require('../../bower_components/jquery/dist/jquery');
 
-})(this);
+(function (window, $) {
+    'use strict';
+    $(function() {
+        $('body').append('<p style="color:red;">Test jq</p>');
+    });
+
+})(this, jQuery);
